@@ -3,9 +3,12 @@ package yj.board.article.api;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
 import yj.board.article.service.response.ArticlePageResponse;
 import yj.board.article.service.response.ArticleResponse;
+
+import java.util.List;
 
 public class ArticleApiTest {
     // 실행한 article application을 api로 호출하며 테스트
@@ -75,6 +78,36 @@ public class ArticleApiTest {
         System.out.println("response.getArticleCount() = " + response.getArticleCount());
         for (ArticleResponse article : response.getArticles()) {
             System.out.println("articleId = " + article.getArticleId());
+        }
+    }
+
+    @Test
+    void readAllInfiniteScrollTest() {
+        // 첫번째 페이지
+        List<ArticleResponse> articles1 = restClient.get()
+                .uri("/v1/articles/infinite-scroll?boardId=1&pageSize=5")
+                .retrieve()
+                // 리스트로 반환이므로 ParameterizedTypeReference 사용
+                .body(new ParameterizedTypeReference<List<ArticleResponse>>() {
+                });
+
+        System.out.println("firstPage");
+        for (ArticleResponse articleResponse : articles1) {
+            System.out.println("articleResponse.getArticleId() = " + articleResponse.getArticleId());
+        }
+
+        // 기준점이 있는 페이지
+        Long lastArticleId = articles1.getLast().getArticleId();
+        List<ArticleResponse> articles2 = restClient.get()
+                .uri("/v1/articles/infinite-scroll?boardId=1&pageSize=5&lastArticleId=%s".formatted(lastArticleId))
+                .retrieve()
+                // 리스트로 반환이므로 ParameterizedTypeReference 사용
+                .body(new ParameterizedTypeReference<List<ArticleResponse>>() {
+                });
+
+        System.out.println("secondPage");
+        for (ArticleResponse articleResponse : articles2) {
+            System.out.println("articleResponse.getArticleId() = " + articleResponse.getArticleId());
         }
     }
 

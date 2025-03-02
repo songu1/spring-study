@@ -30,4 +30,21 @@ class ArticleRepositoryTest {
         Long count = articleRepository.count(1L, 10000L);
         log.info("count = {}", count);
     }
+
+    @Test
+    void findInfiniteScrollTest() {
+        // 기준점이 없어 30개만
+        List<Article> articles = articleRepository.findAllInfiniteScroll(1L, 30L);
+        for (Article article : articles) {
+            log.info("articleId = {}", article.getArticleId());
+        }
+
+        // 기준점 있을 때
+        Long lastArticleId = articles.getLast().getArticleId();     // 이전 수행에서 마지막 article id 찾기
+        List<Article> articles2 = articleRepository.findAllInfiniteScroll(1L, 30L, lastArticleId);
+        for (Article article : articles2) {
+            log.info("articleId = {}", article.getArticleId());
+        }
+    }
+
 }

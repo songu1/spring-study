@@ -11,6 +11,8 @@ import yj.board.article.service.response.ArticlePageResponse;
 import yj.board.article.service.response.ArticleResponse;
 import yj.board.common.snowflake.Snowflake;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ArticleService {
@@ -53,5 +55,12 @@ public class ArticleService {
                         PageLimitCalculator.calculatePageLimit(page, pageSize, 10L)     // 페이지 활성화 번호 공식 계산
                 )
         );
+    }
+
+    public List<ArticleResponse> readAllInfiniteScroll(Long boardId, Long pageSize, Long lastArticleId) {
+        List<Article> articles = lastArticleId == null ?
+                articleRepository.findAllInfiniteScroll(boardId, pageSize) :        // 첫페이지 : boardId, pageSize만
+                articleRepository.findAllInfiniteScroll(boardId, pageSize, lastArticleId);      // 기준점o : + lastArticleId
+        return articles.stream().map(ArticleResponse::from).toList();       // 쿼리 결과 응답
     }
 }
