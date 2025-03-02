@@ -7,6 +7,7 @@ import yj.board.article.entity.Article;
 import yj.board.article.repository.ArticleRepository;
 import yj.board.article.service.request.ArticleCreateRequest;
 import yj.board.article.service.request.ArticleUpdateRequest;
+import yj.board.article.service.response.ArticlePageResponse;
 import yj.board.article.service.response.ArticleResponse;
 import yj.board.common.snowflake.Snowflake;
 
@@ -39,5 +40,18 @@ public class ArticleService {
     @Transactional
     public void delete(Long articleId) {
         articleRepository.deleteById(articleId);
+    }
+
+    // 페이지 활성화 번호 계산
+    public ArticlePageResponse readAll(Long boardId, Long page, Long pageSize) {
+        return ArticlePageResponse.of(
+                articleRepository.findAll(boardId, (page - 1) * pageSize, pageSize).stream()    // offset 계산 공식
+                        .map(ArticleResponse::from)     // articleresponse로 변환
+                        .toList(),
+                articleRepository.count(        // count도 반환
+                        boardId,
+                        PageLimitCalculator.calculatePageLimit(page, pageSize, 10L)     // 페이지 활성화 번호 공식 계산
+                )
+        );
     }
 }

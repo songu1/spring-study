@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
+import yj.board.article.service.response.ArticlePageResponse;
 import yj.board.article.service.response.ArticleResponse;
 
 public class ArticleApiTest {
@@ -63,6 +64,20 @@ public class ArticleApiTest {
                 .uri("/v1/articles/{articleId}",152846719819104256L)
                 .retrieve();
     }
+
+    @Test
+    void readAllTest() {
+        ArticlePageResponse response = restClient.get()
+                .uri("/v1/articles?boardId=1&pageSize=30&page=50000")       // 1번게시판에서 30개의 게시글을 1번/50000번 페이지로 조회
+                .retrieve()
+                .body(ArticlePageResponse.class);       // articlepageresponse로 응답을 받음
+
+        System.out.println("response.getArticleCount() = " + response.getArticleCount());
+        for (ArticleResponse article : response.getArticles()) {
+            System.out.println("articleId = " + article.getArticleId());
+        }
+    }
+
 
     // ArticleCreateRequest 정의
     @Getter
