@@ -1,1 +1,15 @@
 server.port: 9001
+spring:
+  application:
+    name: yj-board-comment-service  # application name 지정
+  datasource:   # data source 지정
+    driver-class-name: com.mysql.cj.jdbc.Driver # mysql driver
+    url: jdbc:mysql://127.0.0.1:3306/comment    # docker container로 접속할 수 있도록 해놓음
+    username: root
+    password: root
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect   # mysql을 사용하므로
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      ddl-auto: none    # mysql에서 직접 ddl 설정
