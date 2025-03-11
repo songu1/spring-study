@@ -3,9 +3,13 @@ package yj.board.comment.api;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
 import yj.board.comment.service.request.CommentCreateRequest;
+import yj.board.comment.service.response.CommentPageResponse;
 import yj.board.comment.service.response.CommentResponse;
+
+import java.util.List;
 
 public class CommentApiTest {
     RestClient restClient = RestClient.create("http://localhost:9001");
@@ -51,6 +55,85 @@ public class CommentApiTest {
         restClient.delete()
                 .uri("/v1/comments/{commentId}",155295844092813312L)    // 실제 삭제는 안되고 deleted=true로 되어있어야함
                 .retrieve();
+    }
+
+    // 댓글 목록 조회 - 페이지 번호
+    @Test
+    void readAll() {
+        CommentPageResponse response = restClient.get()
+                .uri("/v1/comments?articleId=1&page=1&pageSize=10")
+                .retrieve()
+                .body(CommentPageResponse.class);
+
+        System.out.println("response.getCommentCount() = " + response.getCommentCount());
+        for (CommentResponse comment: response.getComments()) {
+            // 2 depth 댓글이면 tab 문제
+            if(!comment.getCommentId().equals(comment.getParentCommentId())) {
+                System.out.println("\t");
+            }
+            System.out.println("comment.getCommentId() = " + comment.getCommentId());
+        }
+
+        /* 1번 페이지 수행 결과
+        comment.getCommentId() = 155305721076776960
+
+        comment.getCommentId() = 155305721286492161
+        comment.getCommentId() = 155305721076776961
+
+        comment.getCommentId() = 155305721286492165
+        comment.getCommentId() = 155305721080971264
+
+        comment.getCommentId() = 155305721286492160
+        comment.getCommentId() = 155305721080971265
+
+        comment.getCommentId() = 155305721286492162
+        comment.getCommentId() = 155305721080971266
+
+        comment.getCommentId() = 155305721286492164*/
+
+    }
+
+    // 댓글 목록 조회 - 무한스크롤
+    @Test
+    void readAllInfiniteScroll() {
+        // 1 페이지
+        List<CommentResponse> responses1 = restClient.get()
+                .uri("/v1/comments/infinite-scroll?articleId=1&pageSize=5")
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<CommentResponse>>() {
+                });
+
+        System.out.println("first page");
+        for (CommentResponse comment: responses1) {
+            // 2 depth 댓글이면 tab 문제
+            if(!comment.getCommentId().equals(comment.getParentCommentId())) {
+                System.out.println("\t");
+            }
+            System.out.println("comment.getCommentId() = " + comment.getCommentId());
+        }
+
+
+        // 2이상 페이지
+
+        Long lastParentCommentId = responses1.getLast().getParentCommentId();
+        Long lastCommentId = responses1.getLast().getCommentId();
+
+        List<CommentResponse> responses2 = restClient.get()
+                .uri("/v1/comments/infinite-scroll?articleId=1&pageSize=5&lastParentCommentId=%s&lastCommentId=%s"
+                        .formatted(lastParentCommentId,lastCommentId))
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<CommentResponse>>() {
+                });
+
+        System.out.println("second page");
+        for (CommentResponse comment: responses2) {
+            // 2 depth 댓글이면 tab 문제
+            if(!comment.getCommentId().equals(comment.getParentCommentId())) {
+                System.out.println("\t");
+            }
+            System.out.println("comment.getCommentId() = " + comment.getCommentId());
+        }
+
     }
 
     @Getter

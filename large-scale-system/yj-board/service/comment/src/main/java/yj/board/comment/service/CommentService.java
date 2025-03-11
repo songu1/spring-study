@@ -6,8 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import yj.board.comment.entity.Comment;
 import yj.board.comment.repository.CommentRepository;
 import yj.board.comment.service.request.CommentCreateRequest;
+import yj.board.comment.service.response.CommentPageResponse;
 import yj.board.comment.service.response.CommentResponse;
 import yj.board.common.snowflake.Snowflake;
+
+import java.util.List;
 
 import static java.util.function.Predicate.not;
 
@@ -84,5 +87,28 @@ public class CommentService {
                     .filter(not(this::hasChildren))                         // 상위댓글이 또 다른 자식을 가지고 있지 않은지 확인
                     .ifPresent(this::delete);                               // 재귀적으로 상위 댓글 삭제
         }
+    }
+
+    /* 댓글 목록 조회 - 페이지 번호 */
+    public CommentPageResponse readAll(Long articleId, Long page, Long pageSize) {
+        return CommentPageResponse.of(
+                // 댓글 조회
+                commentRepository.findAll(articleId, (page - 1) * pageSize, pageSize).stream()
+                        .map(CommentResponse::from)         // 응답을 CommentResponse로 변환
+                        .toList(),                          // 리스트로 변환
+                // 댓글 개수 조회
+                commentRepository.count(articleId,PageLimitCalculator.calculatePageLimit(page, pageSize, 10L))  // 한 화면에서 이동가능한 페이지 번호 수 : 10L로 지정
+        );
+    }
+
+    /* 댓글 목록 조회 - 무한스크롤 */
+    public List<CommentResponse> readAll(Long articleId, Long lastParentCommentId, Long lastCommentId, Long limit) {
+        // 1페이지
+        List<Comment> comments = lastParentCommentId == null || lastCommentId == null ?
+                commentRepository.findAllInfiniteScroll(articleId, limit) :                                     // 1페이지
+                commentRepository.findAllInfiniteScroll(articleId, lastParentCommentId, lastCommentId, limit);  // 2이상 페이지
+        return comments.stream()
+                .map(CommentResponse::from)     // List<Comment> 를 List<CommentResponse> 변환
+                .toList();
     }
 }
